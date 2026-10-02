@@ -318,7 +318,8 @@ function showPool(pool){
 
 /* ---------- Gemini ---------- */
 function parseJSON(text){
-  var t = text.replace(/```json|```/g, '').trim();
+  var t = text.replace(/```json|```/g, '').trim()
+    .replace(/<t id="(\d+)">/g, '<t$1>');
   var a = t.indexOf('{'), b = t.lastIndexOf('}');
   if (a < 0 || b < 0) throw new Error('The story came back in an unexpected format. Try again.');
   return JSON.parse(t.slice(a, b + 1));
@@ -346,7 +347,8 @@ async function gemini(prompt){
         var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
         var text = parts.map(function(p){ return p.text || ''; }).join('');
         if (!text){ lastMsg = 'Gemini returned no story' + (j.promptFeedback && j.promptFeedback.blockReason ? ' (' + j.promptFeedback.blockReason + ')' : '') + '.'; continue; }
-        var story = parseJSON(text);
+        var story = null;
+        try{ story = parseJSON(text); }catch(e){ lastMsg = 'The story came back garbled.'; continue; }
         if (!story || !Array.isArray(story.sentences) || !story.sentences.length){ lastMsg = 'The story came back incomplete.'; continue; }
         story.title = story.title || '';
         story.questions = Array.isArray(story.questions) ? story.questions : [];
@@ -372,8 +374,8 @@ function grammarFor(level){
 var MARKUP_RULES = [
   'Markup inside every Japanese string:',
   '- Give each kanji word furigana as ONE brace covering all its consecutive kanji: {予定|よてい}, {学校|がっこう}, {食|た}べました. Never split a compound into separate braces, and never leave a kanji outside braces. Okurigana stays outside.',
-  '- Wrap each occurrence of a target word in <t id="ID">...</t>, e.g. <t id="2467">{食|た}べた</t>.',
-  '- No other markup.'
+  '- Wrap each occurrence of a target word in <tID>...</t> with its id, e.g. <t2467>{食|た}べた</t>.',
+  '- No other markup. Never use double quotes inside Japanese strings; use 「」 for speech.'
 ].join('\n');
 var KANJI_RULE = 'If a word contains ANY kanji not in the allowed list, write the WHOLE word in hiragana (or katakana for loanwords). Never mix kanji and kana inside one word (write じゅしん, not 受しん). 々 is fine.';
 var SCHEMA = '{"plan":"2-3 sentence English outline: who, where, what happens, how it ends","title":"Japanese title with markup","sentences":[{"jp":"sentence with markup","en":"natural English translation"}],"questions":[{"q":"comprehension question in simple Japanese with markup","a":"answer in English"}]}';
@@ -411,11 +413,11 @@ function buildPrompt(targets, allowed, level, topic){
 function buildEditPrompt(story, allowed, bad){
   return [
     'You are a careful Japanese editor for graded readers. Edit this story JSON.',
-    'Fix: grammar mistakes, wrong verb or adjective conjugations, unnatural or textbook-sounding phrasing, repeated words, and sentences that do not follow logically from the previous one. If a sentence only exists to squeeze in a word, rewrite or remove it, dropping its <t> tag if needed.',
+    'Fix: grammar mistakes, wrong verb or adjective conjugations, unnatural or textbook-sounding phrasing, repeated words, and sentences that do not follow logically from the previous one. If a sentence only exists to squeeze in a word, rewrite or remove it, dropping its tag if needed.',
     bad.length ? 'These kanji are NOT allowed and must go: ' + bad.join(' ') : '',
     'Allowed kanji: ' + Array.from(allowed).join(''),
     KANJI_RULE,
-    'Keep the same plot, title, level and roughly the same length. Keep <t id> tags on target words that remain. Update English translations and questions to match.',
+    'Keep the same plot, title, level and roughly the same length. Keep the <tID> tags on target words that remain. Update English translations and questions to match.',
     MARKUP_RULES,
     '',
     'Return ONLY the corrected JSON in the same shape:',
@@ -500,7 +502,7 @@ function markKanji(s, allowed){
   return s.replace(HAN, function(ch){ return allowed.has(ch) ? ch : '<span class="bad" title="Not learned yet">' + ch + '</span>'; });
 }
 function renderJP(str, ctx){
-  var re = /<t id="(\d+)">|<\/t>|\{([^|{}]+)\|([^{}]+)\}/g, html = '', last = 0, open = false, m;
+  var re = /<t(?: id=\\?")?(\d+)\\?"?>|<\/t>|\{([^|{}]+)\|([^{}]+)\}/g, html = '', last = 0, open = false, m;
   str = String(str || '');
   while ((m = re.exec(str))){
     html += markKanji(esc(str.slice(last, m.index)), ctx.allowed);

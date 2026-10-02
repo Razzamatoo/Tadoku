@@ -64,7 +64,8 @@ main.dim{opacity:.35;pointer-events:none}
 .s{font-family:var(--jp);font-size:1.3rem;line-height:2.5;margin:0}
 .en{margin:-.2rem 0 .8rem;padding-left:.9rem;border-left:2px solid var(--rule);color:var(--muted);font-size:.95rem;line-height:1.5}
 .en[hidden]{display:none}
-ruby rt{font-family:var(--ui);font-size:.5em;color:var(--muted);letter-spacing:0}
+ruby{ruby-align:center;ruby-position:over}
+ruby rt{font-family:var(--ui);font-size:.5em;color:var(--muted);letter-spacing:0;ruby-align:center}
 body.furi-tap .s ruby rt,body.furi-tap .title ruby rt{visibility:hidden}
 body.furi-tap ruby.on rt{visibility:visible}
 body.furi-tap .s ruby{cursor:pointer}
@@ -168,6 +169,10 @@ dt{color:var(--muted)} dd{margin:0}
       <small>Change this if Google renames or retires the model</small>
       <input name="model" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
     </label>
+    <label>Backup model
+      <small>Used automatically when the main model is busy</small>
+      <input name="fallbackModel" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
+    </label>
     <div class="row">
       <label>Story length
         <select name="storyLength"><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select>
@@ -212,7 +217,7 @@ var PREFIX = 'tadoku:';
 var STAGES = ['Lesson','Apprentice I','Apprentice II','Apprentice III','Apprentice IV','Guru I','Guru II','Master','Enlightened','Burned'];
 var LENGTHS = {short:'5 to 7', medium:'8 to 12', long:'14 to 18'};
 var HAN = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g;
-var DEFAULTS = {wkToken:'', geminiKey:'', model:'gemini-flash-latest', threshold:75, nCritical:6, nReinforce:5, storyLength:'medium', grammar:'auto', furigana:'always'};
+var DEFAULTS = {wkToken:'', geminiKey:'', model:'gemini-flash-latest', fallbackModel:'gemini-flash-lite-latest', threshold:75, nCritical:4, nReinforce:3, storyLength:'medium', grammar:'auto', furigana:'always', v:2};
 
 var store = {
   get: function(k, d){ try{ var v = localStorage.getItem(PREFIX+k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
@@ -221,6 +226,7 @@ var store = {
 };
 
 var settings = Object.assign({}, DEFAULTS, store.get('settings', {}));
+if (settings.v !== 2){ settings.nCritical = Math.min(settings.nCritical, 4); settings.nReinforce = Math.min(settings.nReinforce, 3); settings.v = 2; store.set('settings', settings); }
 var busy = false;
 var current = null;
 
@@ -317,63 +323,115 @@ function parseJSON(text){
   if (a < 0 || b < 0) throw new Error('The story came back in an unexpected format. Try again.');
   return JSON.parse(t.slice(a, b + 1));
 }
-async function gemini(prompt){
-  var model = settings.model.trim().replace(/^models\//, '') || DEFAULTS.model;
+async function callModel(model, prompt){
+  model = String(model || '').trim().replace(/^models\//, '');
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + encodeURIComponent(model) + ':generateContent?key=' + encodeURIComponent(settings.geminiKey);
   var r;
   try{
     r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({contents:[{role:'user', parts:[{text: prompt}]}], generationConfig:{temperature: 0.9, responseMimeType:'application/json'}})});
+      body: JSON.stringify({contents:[{role:'user', parts:[{text: prompt}]}], generationConfig:{temperature: 0.7, responseMimeType:'application/json'}})});
   }catch(e){ throw new Error('Couldn\u2019t reach Gemini. Check your connection and try again.'); }
   var j = await r.json().catch(function(){ return {}; });
-  if (!r.ok){
-    var msg = (j.error && j.error.message) || ('HTTP ' + r.status);
-    if (r.status === 404) msg += ' Check the model name in Settings.';
-    if (r.status === 429) msg = 'Gemini rate limit reached. Wait a minute and try again.';
-    throw new Error('Gemini: ' + msg);
+  return {ok: r.ok, status: r.status, json: j, model: model};
+}
+async function gemini(prompt){
+  var models = [settings.model || DEFAULTS.model];
+  if (settings.fallbackModel && settings.fallbackModel !== models[0]) models.push(settings.fallbackModel);
+  var lastMsg = '';
+  for (var mi = 0; mi < models.length; mi++){
+    for (var attempt = 0; attempt < 2; attempt++){
+      var res = await callModel(models[mi], prompt);
+      if (res.ok){
+        var j = res.json;
+        var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+        var text = parts.map(function(p){ return p.text || ''; }).join('');
+        if (!text){ lastMsg = 'Gemini returned no story' + (j.promptFeedback && j.promptFeedback.blockReason ? ' (' + j.promptFeedback.blockReason + ')' : '') + '.'; continue; }
+        var story = parseJSON(text);
+        if (!story || !Array.isArray(story.sentences) || !story.sentences.length){ lastMsg = 'The story came back incomplete.'; continue; }
+        story.title = story.title || '';
+        story.questions = Array.isArray(story.questions) ? story.questions : [];
+        return story;
+      }
+      lastMsg = (res.json.error && res.json.error.message) || ('HTTP ' + res.status);
+      if (res.status === 404){ lastMsg = 'Model \u201c' + res.model + '\u201d wasn\u2019t found. Check the model names in Settings.'; break; }
+      if (res.status === 400 || res.status === 403) throw new Error('Gemini: ' + lastMsg);
+      if (res.status === 429 || res.status >= 500){
+        status(mi === 0 ? 'Gemini is busy, trying again' : 'Trying the backup model');
+        await sleep(3000);
+        continue;
+      }
+      break;
+    }
   }
-  var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-  var text = parts.map(function(p){ return p.text || ''; }).join('');
-  if (!text) throw new Error('Gemini returned no story' + (j.promptFeedback && j.promptFeedback.blockReason ? ' (' + j.promptFeedback.blockReason + ')' : '') + '. Try again.');
-  var story = parseJSON(text);
-  if (!story || !Array.isArray(story.sentences) || !story.sentences.length) throw new Error('The story came back incomplete. Try again.');
-  story.title = story.title || '';
-  story.questions = Array.isArray(story.questions) ? story.questions : [];
-  return story;
+  throw new Error('Gemini: ' + lastMsg + ' Try again in a minute.');
 }
 function grammarFor(level){
   if (settings.grammar !== 'auto') return settings.grammar;
   return level <= 10 ? 'N5' : level <= 20 ? 'N4' : level <= 35 ? 'N3' : 'N2';
 }
+var MARKUP_RULES = [
+  'Markup inside every Japanese string:',
+  '- Give each kanji word furigana as ONE brace covering all its consecutive kanji: {予定|よてい}, {学校|がっこう}, {食|た}べました. Never split a compound into separate braces, and never leave a kanji outside braces. Okurigana stays outside.',
+  '- Wrap each occurrence of a target word in <t id="ID">...</t>, e.g. <t id="2467">{食|た}べた</t>.',
+  '- No other markup.'
+].join('\n');
+var KANJI_RULE = 'If a word contains ANY kanji not in the allowed list, write the WHOLE word in hiragana (or katakana for loanwords). Never mix kanji and kana inside one word (write じゅしん, not 受しん). 々 is fine.';
+var SCHEMA = '{"plan":"2-3 sentence English outline: who, where, what happens, how it ends","title":"Japanese title with markup","sentences":[{"jp":"sentence with markup","en":"natural English translation"}],"questions":[{"q":"comprehension question in simple Japanese with markup","a":"answer in English"}]}';
 function buildPrompt(targets, allowed, level, topic){
   var rows = targets.map(function(x){
-    return x.id + ' | ' + x.c + ' | ' + x.r.join('/') + ' | ' + x.m.join(', ') + ' | ' + (x.t === 'k' ? 'kanji' : 'word');
+    return x.id + ' | ' + x.c + ' | ' + x.r.join('/') + ' | ' + x.m.join(', ');
   }).join('\n');
   return [
-    'Write a short graded-reader story in Japanese for a learner.',
+    'You are writing one short graded-reader story in Japanese, like a good children\u2019s book or easy reader.',
     '',
-    'Learner: WaniKani level ' + level + '. Use only JLPT ' + grammarFor(level) + ' grammar or easier. Natural, simple sentences.',
-    'Length: ' + LENGTHS[settings.storyLength] + ' sentences, forming a coherent story or scene with a clear ending.',
-    topic ? 'Theme: ' + topic : 'Theme: anything everyday and engaging; vary it.',
+    'Priorities, in order:',
+    '1. A story that makes sense: one main character, a simple situation, events that follow from each other, and a satisfying ending.',
+    '2. Natural, grammatically correct Japanese a native speaker would write. Correct conjugations. No repeated words within a sentence, no filler.',
+    '3. Using the target words. Use each one only where it fits naturally. Skipping a word is better than forcing it into a sentence that sounds odd. Never talk about words, kanji or language in the story.',
     '',
-    'Target items. Use EVERY one at least once, conjugating verbs and adjectives naturally:',
-    'id | characters | reading | meaning | type',
+    'Learner: WaniKani level ' + level + '. Use only JLPT ' + grammarFor(level) + ' grammar or easier.',
+    'Length: ' + LENGTHS[settings.storyLength] + ' sentences.',
+    topic ? 'Theme: ' + topic : 'Theme: pick something everyday and engaging, with a small problem or surprise that gets resolved.',
+    'Decide the plot first (the "plan" field), then choose where target words fit it.',
+    '',
+    'Target words (id | word | reading | meaning):',
     rows || '(none)',
-    'For a kanji-type target, use a common word containing that kanji.',
     '',
-    'Kanji rule (strict): you may ONLY write these kanji:',
+    'Allowed kanji (strict, use no others):',
     Array.from(allowed).join(''),
-    'Write any word with a kanji not in that list in hiragana (or katakana for loanwords). 々 is fine.',
+    KANJI_RULE,
     '',
-    'Markup inside every Japanese string:',
-    '- Give every word containing kanji furigana as {kanji|reading}. Only kanji go in braces; okurigana stays outside. Examples: {食|た}べました, {学校|がっこう}.',
-    '- Wrap each occurrence of a target item in <t id="ID">...</t>, e.g. <t id="2467">{食|た}べた</t>.',
-    '- No other markup.',
+    MARKUP_RULES,
     '',
     'Return ONLY this JSON:',
-    '{"title":"Japanese title with markup","sentences":[{"jp":"sentence with markup","en":"natural English translation"}],"questions":[{"q":"comprehension question in simple Japanese with markup","a":"answer in English"}]}',
+    SCHEMA,
     'Include exactly 2 questions.'
   ].join('\n');
+}
+function buildEditPrompt(story, allowed, bad){
+  return [
+    'You are a careful Japanese editor for graded readers. Edit this story JSON.',
+    'Fix: grammar mistakes, wrong verb or adjective conjugations, unnatural or textbook-sounding phrasing, repeated words, and sentences that do not follow logically from the previous one. If a sentence only exists to squeeze in a word, rewrite or remove it, dropping its <t> tag if needed.',
+    bad.length ? 'These kanji are NOT allowed and must go: ' + bad.join(' ') : '',
+    'Allowed kanji: ' + Array.from(allowed).join(''),
+    KANJI_RULE,
+    'Keep the same plot, title, level and roughly the same length. Keep <t id> tags on target words that remain. Update English translations and questions to match.',
+    MARKUP_RULES,
+    '',
+    'Return ONLY the corrected JSON in the same shape:',
+    SCHEMA,
+    '',
+    JSON.stringify(story)
+  ].join('\n');
+}
+function vocabFor(k, data, taken){
+  var best = null;
+  Object.keys(data.wk.srs).forEach(function(id){
+    var s = data.subjects[id], stage = data.wk.srs[id];
+    if (!s || s.t !== 'v' || taken.has(String(id)) || s.c.indexOf(k.c) < 0 || stage < 1) return;
+    if (!best || stage > best.stage) best = Object.assign({id: String(id), stage: stage, pct: data.wk.stats[id] ? data.wk.stats[id].p : null}, s);
+  });
+  return best;
 }
 function plain(s){ return String(s || '').replace(/<\/?t[^>]*>/g, '').replace(/\{([^|{}]+)\|[^{}]*\}/g, '$1'); }
 function findBad(story, allowed){
@@ -396,24 +454,31 @@ async function newStory(){
     var rein = sample(pool.reinforce.filter(function(x){ return !pickedIds.has(x.id); }), settings.nReinforce);
     crit.forEach(function(x){ x.bucket = 'crit'; });
     rein.forEach(function(x){ x.bucket = 'rein'; });
-    var list = crit.concat(rein);
+    var taken = new Set();
+    var list = [];
+    crit.concat(rein).forEach(function(x){
+      var item = x;
+      if (x.t === 'k'){
+        item = vocabFor(x, data, taken);
+        if (!item) return;
+        item.bucket = x.bucket;
+        item.via = {c: x.c, pct: x.pct, stage: x.stage};
+      }
+      if (taken.has(item.id)) return;
+      taken.add(item.id); list.push(item);
+    });
     var allowed = new Set(pool.known);
     list.forEach(function(x){ (x.c.match(HAN) || []).forEach(function(ch){ allowed.add(ch); }); });
 
     status('Writing your story');
-    var prompt = buildPrompt(list, allowed, pool.level, $('#topic').value.trim());
-    var story = await gemini(prompt);
+    var story = await gemini(buildPrompt(list, allowed, pool.level, $('#topic').value.trim()));
 
-    status('Checking kanji');
-    var bad = findBad(story, allowed);
-    if (bad.length){
-      status('Rewriting kanji you haven\u2019t learned yet');
-      try{
-        var fixed = await gemini('This graded-reader story uses kanji the learner has not learned: ' + bad.join(' ') +
-          '\nReturn the same JSON with every word containing those kanji rewritten in hiragana (no braces for those words). Keep everything else identical, including the <t id> tags and {kanji|reading} markup. Return ONLY JSON.\n\n' + JSON.stringify(story));
-        if (findBad(fixed, allowed).length <= bad.length) story = fixed;
-      }catch(e){ /* keep the original; leftover kanji get flagged on screen */ }
-    }
+    status('Proofreading grammar and kanji');
+    try{
+      var bad = findBad(story, allowed);
+      var edited = await gemini(buildEditPrompt(story, allowed, bad));
+      if (findBad(edited, allowed).length <= bad.length) story = edited;
+    }catch(e){ /* keep the first draft; leftover kanji get flagged on screen */ }
 
     var targets = {};
     list.forEach(function(x){ targets[x.id] = x; });
@@ -456,6 +521,7 @@ function renderJP(str, ctx){
   return html;
 }
 function metaLine(x){
+  if (x.via) return 'For the kanji ' + x.via.c + ': ' + (STAGES[x.via.stage] || '') + (x.via.pct != null ? ', ' + x.via.pct + '% correct' : '');
   var s = STAGES[x.stage] || '';
   return x.pct != null ? s + ', ' + x.pct + '% correct' : s;
 }
@@ -504,9 +570,10 @@ function renderEmpty(){
 function openWord(id){
   var x = current && current.targets[id];
   if (!x) return;
-  var why = x.bucket === 'crit'
+  var src = x.via || x;
+  var why = (x.via ? 'Practises the kanji ' + x.via.c + '. ' : '') + (x.bucket === 'crit'
     ? 'Included because your accuracy is below ' + settings.threshold + '%.'
-    : 'Included to keep a ' + STAGES[x.stage] + ' item fresh.';
+    : 'Included to keep a ' + STAGES[src.stage] + ' item fresh.');
   var link = 'https://www.wanikani.com/' + (x.t === 'k' ? 'kanji/' : 'vocabulary/') + encodeURIComponent(x.c);
   $('#wordBody').innerHTML =
     '<div class="ws-char" lang="ja">' + esc(x.c) + '</div>' +
@@ -534,8 +601,9 @@ $('#settingsForm').addEventListener('submit', function(){
   settings = {
     wkToken: f.wkToken.value.trim(), geminiKey: f.geminiKey.value.trim(),
     model: f.model.value.trim() || DEFAULTS.model,
+    fallbackModel: f.fallbackModel.value.trim(), v: 2,
     storyLength: f.storyLength.value, grammar: f.grammar.value, furigana: f.furigana.value,
-    nCritical: clampInt(f.nCritical.value, 0, 15, 6), nReinforce: clampInt(f.nReinforce.value, 0, 15, 5),
+    nCritical: clampInt(f.nCritical.value, 0, 15, 4), nReinforce: clampInt(f.nReinforce.value, 0, 15, 3),
     threshold: clampInt(f.threshold.value, 10, 100, 75)
   };
   store.set('settings', settings);

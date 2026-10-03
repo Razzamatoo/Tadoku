@@ -66,9 +66,9 @@ main.dim{opacity:.35;pointer-events:none}
 .en[hidden]{display:none}
 ruby{ruby-align:center;ruby-position:over}
 ruby rt{font-family:var(--ui);font-size:.5em;color:var(--muted);letter-spacing:0;ruby-align:center}
-body.furi-tap .s ruby rt,body.furi-tap .title ruby rt{visibility:hidden}
-body.furi-tap ruby.on rt{visibility:visible}
-body.furi-tap .s ruby{cursor:pointer}
+body.furi-tap .s ruby rt,body.furi-tap .title ruby rt{display:none}
+body.furi-tap .s ruby.on rt,body.furi-tap .title ruby.on rt{display:ruby-text}
+body.furi-tap .s ruby,body.furi-tap .title ruby{cursor:pointer}
 
 .tg{cursor:pointer;border-radius:3px}
 .tg.crit{color:var(--beni);-webkit-text-emphasis:filled sesame var(--beni);text-emphasis:filled sesame var(--beni);-webkit-text-emphasis-position:under;text-emphasis-position:under right}
@@ -128,6 +128,7 @@ label input,label select{display:block;width:100%;margin-top:.3rem;padding:.6rem
 dl{display:grid;grid-template-columns:auto 1fr;gap:.25rem 1rem;margin:0 0 1rem;font-size:.9rem}
 dt{color:var(--muted)} dd{margin:0}
 .why{font-size:.9rem;color:var(--muted);margin:0 0 1rem}
+.draft{font-size:.85rem;color:var(--muted);margin:-.5rem 0 1rem}
 @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto!important}}
 </style>
 </head>
@@ -166,13 +167,10 @@ dt{color:var(--muted)} dd{margin:0}
       <input name="geminiKey" type="password" autocomplete="off">
     </label>
     <label>Gemini model
-      <small>Change this if Google renames or retires the model</small>
+      <small>Change this only if Google renames the model. Lite models aren’t allowed because their Japanese isn’t reliable enough.</small>
       <input name="model" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
     </label>
-    <label>Backup model
-      <small>Used automatically when the main model is busy</small>
-      <input name="fallbackModel" type="text" autocomplete="off" autocapitalize="off" spellcheck="false">
-    </label>
+
     <div class="row">
       <label>Story length
         <select name="storyLength"><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option></select>
@@ -204,6 +202,7 @@ dt{color:var(--muted)} dd{margin:0}
       <button class="ghost" type="button" id="refreshWK">Refresh WaniKani data</button>
       <button class="ghost danger" type="button" id="clearAll">Clear all data</button>
     </div>
+    <p class="pool">Tadoku version 5</p>
   </form>
 </dialog>
 
@@ -217,7 +216,8 @@ var PREFIX = 'tadoku:';
 var STAGES = ['Lesson','Apprentice I','Apprentice II','Apprentice III','Apprentice IV','Guru I','Guru II','Master','Enlightened','Burned'];
 var LENGTHS = {short:'5 to 7', medium:'8 to 12', long:'14 to 18'};
 var HAN = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g;
-var DEFAULTS = {wkToken:'', geminiKey:'', model:'gemini-flash-latest', fallbackModel:'gemini-flash-lite-latest', threshold:75, nCritical:4, nReinforce:3, storyLength:'medium', grammar:'auto', furigana:'always', v:2};
+var DEFAULTS = {wkToken:'', geminiKey:'', model:'gemini-flash-latest', threshold:75, nCritical:2, nReinforce:1, storyLength:'medium', grammar:'auto', furigana:'always', v:3};
+function isLite(m){ return /lite/i.test(String(m || '')); }
 
 var store = {
   get: function(k, d){ try{ var v = localStorage.getItem(PREFIX+k); return v === null ? d : JSON.parse(v); }catch(e){ return d; } },
@@ -226,7 +226,10 @@ var store = {
 };
 
 var settings = Object.assign({}, DEFAULTS, store.get('settings', {}));
-if (settings.v !== 2){ settings.nCritical = Math.min(settings.nCritical, 4); settings.nReinforce = Math.min(settings.nReinforce, 3); settings.v = 2; store.set('settings', settings); }
+if (settings.v !== 3){ settings.nCritical = 2; settings.nReinforce = 1; settings.v = 3; }
+if (isLite(settings.model)) settings.model = DEFAULTS.model;
+delete settings.fallbackModel;
+store.set('settings', settings);
 var busy = false;
 var current = null;
 
@@ -335,37 +338,35 @@ async function callModel(model, prompt){
   var j = await r.json().catch(function(){ return {}; });
   return {ok: r.ok, status: r.status, json: j, model: model};
 }
-async function gemini(prompt){
-  var models = [settings.model || DEFAULTS.model];
-  if (settings.fallbackModel && settings.fallbackModel !== models[0]) models.push(settings.fallbackModel);
+async function gemini(prompt, label){
+  var waits = [4000, 8000, 15000, 25000];
   var lastMsg = '';
-  for (var mi = 0; mi < models.length; mi++){
-    for (var attempt = 0; attempt < 2; attempt++){
-      var res = await callModel(models[mi], prompt);
-      if (res.ok){
-        var j = res.json;
-        var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
-        var text = parts.map(function(p){ return p.text || ''; }).join('');
-        if (!text){ lastMsg = 'Gemini returned no story' + (j.promptFeedback && j.promptFeedback.blockReason ? ' (' + j.promptFeedback.blockReason + ')' : '') + '.'; continue; }
-        var story = null;
-        try{ story = parseJSON(text); }catch(e){ lastMsg = 'The story came back garbled.'; continue; }
-        if (!story || !Array.isArray(story.sentences) || !story.sentences.length){ lastMsg = 'The story came back incomplete.'; continue; }
+  for (var attempt = 0; attempt <= waits.length; attempt++){
+    var res = await callModel(settings.model || DEFAULTS.model, prompt);
+    if (res.ok){
+      var j = res.json;
+      var parts = (j.candidates && j.candidates[0] && j.candidates[0].content && j.candidates[0].content.parts) || [];
+      var text = parts.map(function(p){ return p.text || ''; }).join('');
+      var story = null;
+      if (text){ try{ story = parseJSON(text); }catch(e){} }
+      if (story && Array.isArray(story.sentences) && story.sentences.length){
         story.title = story.title || '';
         story.questions = Array.isArray(story.questions) ? story.questions : [];
         return story;
       }
+      lastMsg = 'The reply came back garbled.';
+    } else {
       lastMsg = (res.json.error && res.json.error.message) || ('HTTP ' + res.status);
-      if (res.status === 404){ lastMsg = 'Model \u201c' + res.model + '\u201d wasn\u2019t found. Check the model names in Settings.'; break; }
+      if (res.status === 404) throw new Error('Gemini: model \u201c' + res.model + '\u201d wasn\u2019t found. Check the model name in Settings.');
       if (res.status === 400 || res.status === 403) throw new Error('Gemini: ' + lastMsg);
-      if (res.status === 429 || res.status >= 500){
-        status(mi === 0 ? 'Gemini is busy, trying again' : 'Trying the backup model');
-        await sleep(3000);
-        continue;
-      }
-      break;
+    }
+    if (attempt < waits.length){
+      status(label + ': Gemini is busy, retrying in ' + Math.round(waits[attempt]/1000) + 's (attempt ' + (attempt + 2) + ' of ' + (waits.length + 1) + ')');
+      await sleep(waits[attempt]);
+      status(label);
     }
   }
-  throw new Error('Gemini: ' + lastMsg + ' Try again in a minute.');
+  throw new Error('Gemini is too busy right now (' + lastMsg + '). No story was made, rather than use a weaker model. Try again in a few minutes.');
 }
 function grammarFor(level){
   if (settings.grammar !== 'auto') return settings.grammar;
@@ -435,6 +436,19 @@ function vocabFor(k, data, taken){
   });
   return best;
 }
+function kanaFix(str, allowed){
+  return String(str || '').replace(/\{([^|{}]+)\|([^{}]+)\}/g, function(all, base, reading){
+    var ks = base.match(HAN) || [];
+    for (var i = 0; i < ks.length; i++) if (!allowed.has(ks[i])) return reading;
+    return all;
+  });
+}
+function sanitize(story, allowed){
+  story.title = kanaFix(story.title, allowed);
+  story.sentences.forEach(function(x){ x.jp = kanaFix(x.jp, allowed); });
+  story.questions.forEach(function(x){ x.q = kanaFix(x.q, allowed); });
+  return story;
+}
 function plain(s){ return String(s || '').replace(/<\/?t[^>]*>/g, '').replace(/\{([^|{}]+)\|[^{}]*\}/g, '$1'); }
 function findBad(story, allowed){
   var txt = [story.title].concat(story.sentences.map(function(s){ return s.jp; }), story.questions.map(function(q){ return q.q; })).map(plain).join('');
@@ -473,14 +487,16 @@ async function newStory(){
     list.forEach(function(x){ (x.c.match(HAN) || []).forEach(function(ch){ allowed.add(ch); }); });
 
     status('Writing your story');
-    var story = await gemini(buildPrompt(list, allowed, pool.level, $('#topic').value.trim()));
+    var story = sanitize(await gemini(buildPrompt(list, allowed, pool.level, $('#topic').value.trim()), 'Writing your story'), allowed);
 
     status('Proofreading grammar and kanji');
+    var proofread = false;
     try{
       var bad = findBad(story, allowed);
-      var edited = await gemini(buildEditPrompt(story, allowed, bad));
-      if (findBad(edited, allowed).length <= bad.length) story = edited;
-    }catch(e){ /* keep the first draft; leftover kanji get flagged on screen */ }
+      var edited = sanitize(await gemini(buildEditPrompt(story, allowed, bad), 'Proofreading'), allowed);
+      if (findBad(edited, allowed).length <= bad.length){ story = edited; proofread = true; }
+    }catch(e){ /* keep the draft and say so */ }
+    story.proofread = proofread;
 
     var targets = {};
     list.forEach(function(x){ targets[x.id] = x; });
@@ -531,6 +547,7 @@ function render(saved){
   var ctx = {targets: saved.targets, allowed: new Set(saved.allowed), used: new Set()};
   var st = saved.story, h = '';
   h += '<h1 class="title" lang="ja">' + renderJP(st.title, ctx) + '</h1>';
+  if (st.proofread === false) h += '<p class="draft">Gemini was too busy to proofread this story, so read it with some caution.</p>';
   h += '<div class="legend"><span><span lang="ja" class="tg crit">練習</span>Needs work</span><span><span lang="ja" class="tg rein">復習</span>Keep fresh</span><span><span lang="ja" class="bad">漢</span>Not learned yet</span></div>';
   st.sentences.forEach(function(s, i){
     h += '<div class="sent"><p class="s" lang="ja">' + renderJP(s.jp, ctx) +
@@ -602,10 +619,10 @@ $('#settingsForm').addEventListener('submit', function(){
   var f = this.elements, oldToken = settings.wkToken;
   settings = {
     wkToken: f.wkToken.value.trim(), geminiKey: f.geminiKey.value.trim(),
-    model: f.model.value.trim() || DEFAULTS.model,
-    fallbackModel: f.fallbackModel.value.trim(), v: 2,
+    model: (isLite(f.model.value) ? '' : f.model.value.trim()) || DEFAULTS.model,
+    v: 3,
     storyLength: f.storyLength.value, grammar: f.grammar.value, furigana: f.furigana.value,
-    nCritical: clampInt(f.nCritical.value, 0, 15, 4), nReinforce: clampInt(f.nReinforce.value, 0, 15, 3),
+    nCritical: clampInt(f.nCritical.value, 0, 10, 2), nReinforce: clampInt(f.nReinforce.value, 0, 10, 1),
     threshold: clampInt(f.threshold.value, 10, 100, 75)
   };
   store.set('settings', settings);

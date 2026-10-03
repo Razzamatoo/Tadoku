@@ -240,7 +240,7 @@ dt{color:var(--muted)} dd{margin:0}
       <button class="ghost" type="button" id="refreshWK">Refresh WaniKani data</button>
       <button class="ghost danger" type="button" id="clearAll">Clear all data</button>
     </div>
-    <p class="pool">Tadoku version 9</p>
+    <p class="pool">Tadoku version 10</p>
   </form>
 </dialog>
 
@@ -437,6 +437,24 @@ var MARKUP_RULES = [
 ].join('\n');
 var KANJI_RULE = 'If a word contains ANY kanji not in the allowed list, write the WHOLE word in hiragana (or katakana for loanwords). Never mix kanji and kana inside one word (write じゅしん, not 受しん). 々 is fine.';
 var SCHEMA = '{"plan":"2-3 sentence English outline: who, where, what happens, how it ends","title":"Japanese title with markup","sentences":[{"jp":"sentence with markup","en":"natural English translation"}],"questions":[{"q":"comprehension question in simple Japanese with markup","a":"answer in English"}]}';
+var NAMES = ['はると','ゆい','そうた','めい','りく','あおい','みさき','ゆうと','さくら','たくみ','ひなた','こはる','しょうた','まい','だいち','あかり','れん','ななみ','こうき','ちひろ','たろう','はな','けいこ','ひろし'];
+var ROLES = ['a primary school child','a high school student','a university student','a new office worker','a shop owner','a retired grandfather','a grandmother','a nurse','a bus driver','a cook in a small restaurant','a farmer','a fisherman','a young mother','a train conductor','a librarian','a cat (the story is told about the cat)','a dog (the story is told about the dog)','a foreign tourist visiting Japan'];
+var SETTINGS = ['a seaside town','a busy station','a snowy village','a small ramen shop','a library','a mountain hot spring','a school festival','a long train journey','a supermarket','a park in spring','a rainy afternoon at home','a summer festival','a bakery','a hospital waiting room','a quiet temple','a beach in summer','an apartment building','a rice field in autumn','a convenience store at night','a bicycle ride across town'];
+var GENRES = ['a gentle mystery with a small clue','light comedy with a funny misunderstanding','a heart-warming story about kindness','a small adventure','an old-style folktale (昔話)','a slice-of-life day with a small surprise','a story about learning something new','a story about losing and finding something','a story about a promise','a seasonal story'];
+function pickOne(a){ return a[Math.floor(Math.random() * a.length)]; }
+function storySpec(topic){
+  var recent = store.get('recentNames', []);
+  var fresh = NAMES.filter(function(n){ return recent.indexOf(n) < 0; });
+  var name = pickOne(fresh.length ? fresh : NAMES);
+  store.set('recentNames', [name].concat(recent).slice(0, 8));
+  var lines = [
+    'Main character: ' + name + ', ' + pickOne(ROLES) + '. Write the name exactly as given, in kana. Do not use the name けん or ケン.',
+    'Narration: ' + (Math.random() < 0.3 ? 'first person (わたし or ぼく), using the name only when others speak to them.' : 'third person.')
+  ];
+  if (topic) lines.unshift('Theme: ' + topic + '. If the theme names its own characters or setting, those take priority over the suggestions below.');
+  else lines.push('Setting: ' + pickOne(SETTINGS) + '.', 'Kind of story: ' + pickOne(GENRES) + '.');
+  return lines.join('\n');
+}
 function buildPrompt(targets, allowed, level, topic){
   var rows = targets.map(function(x){
     return x.id + ' | ' + x.c + ' | ' + x.r.join('/') + ' | ' + x.m.join(', ');
@@ -451,7 +469,7 @@ function buildPrompt(targets, allowed, level, topic){
     '',
     'Learner: WaniKani level ' + level + '. Use only JLPT ' + grammarFor(level) + ' grammar or easier.',
     'Length: ' + LENGTHS[settings.storyLength] + ' sentences.',
-    topic ? 'Theme: ' + topic : 'Theme: pick something everyday and engaging, with a small problem or surprise that gets resolved.',
+    storySpec(topic),
     'Decide the plot first (the "plan" field), then choose where target words fit it.',
     '',
     'Target words (id | word | reading | meaning):',

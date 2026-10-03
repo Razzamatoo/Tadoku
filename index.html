@@ -46,10 +46,10 @@ header{padding:1.25rem 0 .75rem;border-bottom:1px solid var(--rule)}
 .brand{display:flex;align-items:baseline;gap:.5rem;margin-right:auto}
 .brand b{font-family:var(--jp);font-weight:600;font-size:1.75rem;letter-spacing:.05em}
 .brand span{color:var(--muted);font-size:.9rem}
-.lvl{font-size:.85rem;color:var(--ai);background:var(--ai-soft);padding:.15rem .6rem;border-radius:999px}
-.lvl:empty{display:none}
 .ghost{background:none;border:1px solid var(--rule);border-radius:10px;padding:.4rem .75rem;cursor:pointer}
 .pool{margin:.4rem 0 0;font-size:.85rem;color:var(--muted);min-height:1.4em}
+#ready{margin-top:0;color:var(--ai)}
+#ready:empty{display:none}
 
 main{padding:1.5rem 0 9rem}
 main.dim{opacity:.35;pointer-events:none}
@@ -78,6 +78,21 @@ body.furi-tap .s ruby,body.furi-tap .title ruby{cursor:pointer}
 
 /* The translation stamp */
 .yaku{display:inline-flex;align-items:center;justify-content:center;width:1.7rem;height:1.7rem;margin-left:.35rem;vertical-align:.2em;border:1.5px solid var(--beni);color:var(--beni);background:transparent;border-radius:50%;font-family:var(--jp);font-size:.85rem;line-height:1;cursor:pointer;padding:0}
+.nb{white-space:nowrap}
+.oto{display:inline-flex;align-items:center;justify-content:center;width:1.7rem;height:1.7rem;margin-left:.35rem;vertical-align:.2em;border:1.5px solid var(--ai);color:var(--ai);background:transparent;border-radius:50%;font-family:var(--jp);font-size:.85rem;line-height:1;cursor:pointer;padding:0}
+.oto.on{background:var(--ai);color:var(--sheet)}
+.sent.speaking .s{background:var(--ai-soft);border-radius:6px;box-shadow:0 0 0 .3rem var(--ai-soft)}
+.listen{margin:0 0 1.25rem}
+.s ruby,.title ruby{cursor:pointer}
+.kl{list-style:none;margin:0 0 1rem;padding:0}
+.kl li{display:flex;gap:.75rem;align-items:baseline;padding:.3rem 0;border-bottom:1px solid var(--rule);font-size:.9rem}
+.kl li b{font-family:var(--jp);font-size:1.3rem;font-weight:400}
+.kl li span{color:var(--muted)}
+.lib{list-style:none;margin:0;padding:0}
+.lib button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule);padding:.75rem 0;cursor:pointer}
+.lib .lt{font-family:var(--jp);font-size:1.15rem;display:block}
+.lib .ld{font-size:.8rem;color:var(--muted)}
+.lib .cur .lt{color:var(--ai)}
 .yaku[aria-expanded="true"]{background:var(--beni);color:var(--sheet)}
 
 h2{font-size:1rem;font-weight:700;margin:2.5rem 0 .75rem;padding-top:1.25rem;border-top:1px solid var(--rule)}
@@ -94,6 +109,23 @@ details p.a{margin:.3rem 0 0;color:var(--muted)}
 .word{display:grid;grid-template-columns:auto 1fr;gap:.1rem 1rem;align-items:baseline;width:100%;text-align:left;background:none;border:0;padding:.7rem 0;cursor:pointer}
 .word .c{grid-row:span 2;font-family:var(--jp);font-size:1.5rem;min-width:3.5rem}
 .word.crit .c{color:var(--beni)}
+.word.pick .c{color:var(--ai)}
+.tg.pick{color:var(--ai);-webkit-text-emphasis:filled sesame var(--ai);text-emphasis:filled sesame var(--ai);-webkit-text-emphasis-position:under;text-emphasis-position:under right}
+.linkbtn{background:none;border:0;padding:0;color:var(--ai);font-size:.85rem;text-decoration:underline;text-underline-offset:.2em;cursor:pointer;margin-top:.3rem}
+#pick .sheet{padding-bottom:0}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem;margin:.75rem 0}
+.chips button{border:1px solid var(--rule);background:none;border-radius:999px;padding:.3rem .8rem;font-size:.85rem;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--ai);border-color:var(--ai);color:var(--on-ai)}
+#pickSearch{width:100%;padding:.6rem .75rem;border:1px solid var(--rule);border-radius:10px;background:var(--paper)}
+.pl{list-style:none;margin:0;padding:0}
+label.pk{display:grid;grid-template-columns:auto auto 1fr;gap:0 .8rem;align-items:center;margin:0;padding:.55rem 0;border-bottom:1px solid var(--rule);font-size:.9rem;cursor:pointer}
+label.pk input{display:inline;width:1.2rem;height:1.2rem;margin:0;padding:0;accent-color:var(--ai)}
+label.pk .c{font-family:var(--jp);font-size:1.35rem;min-width:3rem}
+label.pk .x{display:block;font-size:.78rem;color:var(--muted)}
+label.pk.off{opacity:.45}
+.pickfoot{position:sticky;bottom:0;background:var(--sheet);border-top:1px solid var(--rule);margin:0 -1.25rem;padding:.75rem 1.25rem calc(.75rem + env(safe-area-inset-bottom,0px));display:flex;gap:.5rem;align-items:center}
+.pickfoot .n{margin-right:auto;font-size:.85rem;color:var(--muted)}
+.picked{font-size:.85rem;color:var(--ai);margin-top:.3rem}
 .word.rein .c{color:var(--ai)}
 .word .m{font-size:.95rem}
 .word .x{font-size:.8rem;color:var(--muted)}
@@ -136,10 +168,13 @@ dt{color:var(--muted)} dd{margin:0}
 <header class="wrap">
   <div class="bar">
     <div class="brand"><b lang="ja">多読</b><span>Tadoku</span></div>
-    <span class="lvl" id="lvl"></span>
+    <button class="ghost" id="openLibrary">Library</button>
     <button class="ghost" id="openSettings">Settings</button>
   </div>
   <p class="pool" id="pool"></p>
+  <p class="pool" id="ready" aria-live="polite"></p>
+  <button class="linkbtn" id="openPick" type="button">Choose words to practise</button>
+  <p class="picked" id="picked" hidden></p>
 </header>
 
 <div class="wrap">
@@ -197,16 +232,32 @@ dt{color:var(--muted)} dd{margin:0}
         <select name="furigana"><option value="always">Always shown</option><option value="tap">Tap to reveal</option></select>
       </label>
     </div>
+    <label>Reading speed
+      <select name="speech"><option value="0.7">Slow</option><option value="0.85">Relaxed</option><option value="1">Natural</option></select>
+    </label>
     <div class="actions">
       <button class="primary" value="save">Save settings</button>
       <button class="ghost" type="button" id="refreshWK">Refresh WaniKani data</button>
       <button class="ghost danger" type="button" id="clearAll">Clear all data</button>
     </div>
-    <p class="pool">Tadoku version 5</p>
+    <p class="pool">Tadoku version 9</p>
   </form>
 </dialog>
 
 <dialog id="wordSheet"><div class="sheet" id="wordBody"></div></dialog>
+<dialog id="pick"><div class="sheet">
+  <h3>Choose words to practise</h3>
+  <input id="pickSearch" type="search" placeholder="Search kanji, reading or meaning" autocomplete="off">
+  <div class="chips" id="pickChips">
+    <button type="button" data-f="crit" aria-pressed="true">Needs work</button>
+    <button type="button" data-f="app" aria-pressed="false">Apprentice</button>
+    <button type="button" data-f="guru" aria-pressed="false">Guru</button>
+    <button type="button" data-f="sel" aria-pressed="false">Chosen</button>
+  </div>
+  <ul class="pl" id="pickList"></ul>
+  <div class="pickfoot"><span class="n" id="pickCount">None chosen</span><button class="ghost" type="button" id="pickClear">Clear</button><button class="primary" type="button" id="pickGo" disabled>Write story</button></div>
+</div></dialog>
+<dialog id="library"><div class="sheet"><h3>Library</h3><ul class="lib" id="libList"></ul><div class="actions"><button class="primary" id="closeLib">Close</button></div></div></dialog>
 
 <script>
 (function(){
@@ -216,7 +267,7 @@ var PREFIX = 'tadoku:';
 var STAGES = ['Lesson','Apprentice I','Apprentice II','Apprentice III','Apprentice IV','Guru I','Guru II','Master','Enlightened','Burned'];
 var LENGTHS = {short:'5 to 7', medium:'8 to 12', long:'14 to 18'};
 var HAN = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/g;
-var DEFAULTS = {wkToken:'', geminiKey:'', model:'gemini-flash-latest', threshold:75, nCritical:2, nReinforce:1, storyLength:'medium', grammar:'auto', furigana:'always', v:3};
+var DEFAULTS = {wkToken:'', geminiKey:'', model:'gemini-flash-latest', threshold:75, nCritical:2, nReinforce:1, storyLength:'medium', grammar:'auto', furigana:'always', speech:'0.85', v:3};
 function isLite(m){ return /lite/i.test(String(m || '')); }
 
 var store = {
@@ -241,23 +292,25 @@ function showError(msg){ var el = $('#error'); el.hidden = !msg; el.textContent 
 function applyFurigana(){ document.body.classList.toggle('furi-tap', settings.furigana === 'tap'); }
 
 /* ---------- WaniKani ---------- */
-async function wkFetch(url){
+async function wkFetch(url, report){
+  report = report || status;
   for (var attempt = 0; attempt < 4; attempt++){
     var r;
     try{ r = await fetch(url, {headers:{'Authorization':'Bearer ' + settings.wkToken, 'Wanikani-Revision':'20170710'}}); }
     catch(e){ throw new Error('Couldn\u2019t reach WaniKani. Check your connection and try again.'); }
     if (r.status === 401) throw new Error('WaniKani rejected your API token. Check it in Settings.');
-    if (r.status === 429){ status('WaniKani is rate limiting, waiting a moment'); await sleep(6000); continue; }
+    if (r.status === 429){ report('WaniKani is rate limiting, waiting a moment'); await sleep(6000); continue; }
     if (!r.ok) throw new Error('WaniKani returned an error (' + r.status + '). Try again shortly.');
     return r.json();
   }
   throw new Error('WaniKani is busy. Wait a minute and try again.');
 }
-async function wkGetAll(url, label){
+async function wkGetAll(url, label, report){
+  report = report || status;
   var out = [], next = url, page = 0;
   while (next){
-    page++; status(label + (page > 1 ? ' (page ' + page + ')' : ''));
-    var j = await wkFetch(next);
+    page++; report(label + (page > 1 ? ' (page ' + page + ')' : ''));
+    var j = await wkFetch(next, report);
     out = out.concat(j.data || []);
     next = j.pages ? j.pages.next_url : null;
   }
@@ -271,28 +324,30 @@ function trimSubject(s){
     .sort(function(a,b){ return b.primary - a.primary; }).slice(0,2).map(function(x){ return x.reading; });
   return {t: s.object === 'kanji' ? 'k' : 'v', c: d.characters, m: m, r: r, l: d.level};
 }
-async function loadWK(force){
+async function loadWK(force, report){
+  report = report || status;
   var cached = store.get('wk', null);
   var subj = store.get('subjects', null);
   if (!force && cached && subj && Date.now() - cached.at < 30*60*1000) return {wk: cached, subjects: subj.items};
-  status('Checking your WaniKani level');
-  var user = await wkFetch(WK + 'user');
+  report('Checking your WaniKani level');
+  var user = await wkFetch(WK + 'user', report);
   var level = user.data.level;
   if (force || !subj || subj.level !== level || Date.now() - subj.at > 7*86400000){
     var levels = []; for (var i = 1; i <= level; i++) levels.push(i);
-    var raw = await wkGetAll(WK + 'subjects?types=kanji,vocabulary&levels=' + levels.join(','), 'Downloading kanji and vocabulary');
+    var raw = await wkGetAll(WK + 'subjects?types=kanji,vocabulary&levels=' + levels.join(','), 'Downloading kanji and vocabulary', report);
     var items = {};
     raw.forEach(function(s){ if (!s.data.hidden_at && s.data.characters) items[s.id] = trimSubject(s); });
     subj = {level: level, at: Date.now(), items: items};
     store.set('subjects', subj);
   }
-  var asg = await wkGetAll(WK + 'assignments?subject_types=kanji,vocabulary&started=true', 'Loading your progress');
+  var asg = await wkGetAll(WK + 'assignments?subject_types=kanji,vocabulary&started=true', 'Loading your progress', report);
   var srs = {}; asg.forEach(function(a){ srs[a.data.subject_id] = a.data.srs_stage; });
-  var rs = await wkGetAll(WK + 'review_statistics?subject_types=kanji,vocabulary', 'Loading your accuracy');
+  var rs = await wkGetAll(WK + 'review_statistics?subject_types=kanji,vocabulary', 'Loading your accuracy', report);
   var stats = {}; rs.forEach(function(s){ var d = s.data; stats[d.subject_id] = {p: d.percentage_correct, n: d.meaning_correct + d.meaning_incorrect + d.reading_correct + d.reading_incorrect}; });
   var wk = {at: Date.now(), level: level, srs: srs, stats: stats};
   store.set('wk', wk);
-  status('');
+  dict = null;
+  report('');
   return {wk: wk, subjects: subj.items};
 }
 function buildPool(data){
@@ -315,8 +370,7 @@ function sample(arr, n){
   return a.slice(0, n);
 }
 function showPool(pool){
-  $('#lvl').textContent = 'Level ' + pool.level;
-  $('#pool').textContent = pool.critical.length + ' words need work, ' + pool.reinforce.length + ' to keep fresh';
+  $('#pool').textContent = 'Level ' + pool.level + ': ' + pool.critical.length + ' words need work, ' + pool.reinforce.length + ' to keep fresh';
 }
 
 /* ---------- Gemini ---------- */
@@ -338,8 +392,11 @@ async function callModel(model, prompt){
   var j = await r.json().catch(function(){ return {}; });
   return {ok: r.ok, status: r.status, json: j, model: model};
 }
-async function gemini(prompt, label){
-  var waits = [4000, 8000, 15000, 25000];
+var FG_WAITS = [2000, 5000];
+var BG_WAITS = [5000, 10000, 20000, 30000];
+async function gemini(prompt, label, report, waits){
+  report = report || status;
+  waits = waits || FG_WAITS;
   var lastMsg = '';
   for (var attempt = 0; attempt <= waits.length; attempt++){
     var res = await callModel(settings.model || DEFAULTS.model, prompt);
@@ -361,12 +418,12 @@ async function gemini(prompt, label){
       if (res.status === 400 || res.status === 403) throw new Error('Gemini: ' + lastMsg);
     }
     if (attempt < waits.length){
-      status(label + ': Gemini is busy, retrying in ' + Math.round(waits[attempt]/1000) + 's (attempt ' + (attempt + 2) + ' of ' + (waits.length + 1) + ')');
+      report(label + ': Gemini is busy, retrying in ' + Math.round(waits[attempt]/1000) + 's');
       await sleep(waits[attempt]);
-      status(label);
+      report(label);
     }
   }
-  throw new Error('Gemini is too busy right now (' + lastMsg + '). No story was made, rather than use a weaker model. Try again in a few minutes.');
+  throw new Error('Gemini is busy right now, so no story was made rather than use a weaker model. Try again shortly; the app will also keep preparing stories in the background while it\u2019s open.');
 }
 function grammarFor(level){
   if (settings.grammar !== 'auto') return settings.grammar;
@@ -376,7 +433,7 @@ var MARKUP_RULES = [
   'Markup inside every Japanese string:',
   '- Give each kanji word furigana as ONE brace covering all its consecutive kanji: {予定|よてい}, {学校|がっこう}, {食|た}べました. Never split a compound into separate braces, and never leave a kanji outside braces. Okurigana stays outside.',
   '- Wrap each occurrence of a target word in <tID>...</t> with its id, e.g. <t2467>{食|た}べた</t>.',
-  '- No other markup. Never use double quotes inside Japanese strings; use 「」 for speech.'
+  '- No spaces between words (normal Japanese, not wakachigaki). No other markup. Never use double quotes inside Japanese strings; use 「」 for speech.'
 ].join('\n');
 var KANJI_RULE = 'If a word contains ANY kanji not in the allowed list, write the WHOLE word in hiragana (or katakana for loanwords). Never mix kanji and kana inside one word (write じゅしん, not 受しん). 々 is fine.';
 var SCHEMA = '{"plan":"2-3 sentence English outline: who, where, what happens, how it ends","title":"Japanese title with markup","sentences":[{"jp":"sentence with markup","en":"natural English translation"}],"questions":[{"q":"comprehension question in simple Japanese with markup","a":"answer in English"}]}';
@@ -427,13 +484,20 @@ function buildEditPrompt(story, allowed, bad){
     JSON.stringify(story)
   ].join('\n');
 }
-function vocabFor(k, data, taken){
+function vocabFor(k, data, taken, anyVocab){
   var best = null;
   Object.keys(data.wk.srs).forEach(function(id){
     var s = data.subjects[id], stage = data.wk.srs[id];
     if (!s || s.t !== 'v' || taken.has(String(id)) || s.c.indexOf(k.c) < 0 || stage < 1) return;
     if (!best || stage > best.stage) best = Object.assign({id: String(id), stage: stage, pct: data.wk.stats[id] ? data.wk.stats[id].p : null}, s);
   });
+  if (!best && anyVocab){
+    Object.keys(data.subjects).forEach(function(id){
+      var s = data.subjects[id];
+      if (s.t !== 'v' || taken.has(String(id)) || s.c.indexOf(k.c) < 0) return;
+      if (!best || s.c.length < best.c.length) best = Object.assign({id: String(id), stage: data.wk.srs[id] || 0, pct: null}, s);
+    });
+  }
   return best;
 }
 function kanaFix(str, allowed){
@@ -443,10 +507,16 @@ function kanaFix(str, allowed){
     return all;
   });
 }
+function unspace(str){
+  // Japanese doesn't put spaces between words; drop any the model adds (keeps spaces between Latin letters)
+  return String(str || '').replace(/[ \u3000\t]+/g, function(sp, i, all){
+    return /[A-Za-z0-9]/.test(all[i - 1] || '') && /[A-Za-z0-9]/.test(all[i + sp.length] || '') ? ' ' : '';
+  });
+}
 function sanitize(story, allowed){
-  story.title = kanaFix(story.title, allowed);
-  story.sentences.forEach(function(x){ x.jp = kanaFix(x.jp, allowed); });
-  story.questions.forEach(function(x){ x.q = kanaFix(x.q, allowed); });
+  story.title = unspace(kanaFix(story.title, allowed));
+  story.sentences.forEach(function(x){ x.jp = unspace(kanaFix(x.jp, allowed)); });
+  story.questions.forEach(function(x){ x.q = unspace(kanaFix(x.q, allowed)); });
   return story;
 }
 function plain(s){ return String(s || '').replace(/<\/?t[^>]*>/g, '').replace(/\{([^|{}]+)\|[^{}]*\}/g, '$1'); }
@@ -457,59 +527,142 @@ function findBad(story, allowed){
   return Array.from(bad);
 }
 
+/* ---------- Story making ---------- */
+async function makeStory(topic, report, waits, exclude, picks){
+  var data = await loadWK(false, report);
+  var pool = buildPool(data);
+  if (report === status) showPool(pool);
+  var chosen = [];
+  if (picks && picks.length){
+    picks.forEach(function(id){
+      var s = data.subjects[id]; if (!s) return;
+      var st = data.wk.stats[id];
+      chosen.push(Object.assign({id: String(id), stage: data.wk.srs[id] || 0, pct: st ? st.p : null, bucket: 'pick'}, s));
+    });
+  }
+  var critPool = pool.critical.filter(function(x){ return !exclude.has(x.id); });
+  var crit = sample(critPool.slice(0, Math.max(settings.nCritical*3, 15)), settings.nCritical);
+  var pickedIds = new Set(crit.map(function(x){ return x.id; }));
+  var rein = sample(pool.reinforce.filter(function(x){ return !pickedIds.has(x.id) && !exclude.has(x.id); }), settings.nReinforce);
+  crit.forEach(function(x){ x.bucket = 'crit'; });
+  rein.forEach(function(x){ x.bucket = 'rein'; });
+  if (chosen.length){ crit = []; rein = []; exclude = new Set(); }
+  var taken = new Set(exclude);
+  var list = [];
+  chosen.concat(crit, rein).forEach(function(x){
+    var item = x;
+    if (x.t === 'k'){
+      item = vocabFor(x, data, taken, x.bucket === 'pick');
+      if (!item) return;
+      item.bucket = x.bucket;
+      item.via = {c: x.c, pct: x.pct, stage: x.stage};
+    }
+    if (taken.has(item.id)) return;
+    taken.add(item.id); list.push(item);
+  });
+  var allowed = new Set(pool.known);
+  list.forEach(function(x){ (x.c.match(HAN) || []).forEach(function(ch){ allowed.add(ch); }); });
+
+  report('Writing your story');
+  var story = sanitize(await gemini(buildPrompt(list, allowed, pool.level, topic), 'Writing your story', report, waits), allowed);
+
+  report('Proofreading grammar and kanji');
+  var proofread = false;
+  try{
+    var bad = findBad(story, allowed);
+    var edited = sanitize(await gemini(buildEditPrompt(story, allowed, bad), 'Proofreading', report, waits), allowed);
+    if (findBad(edited, allowed).length <= bad.length){ story = edited; proofread = true; }
+  }catch(e){ /* keep the draft and say so */ }
+  story.proofread = proofread;
+
+  var targets = {};
+  list.forEach(function(x){ targets[x.id] = x; });
+  return {story: story, targets: targets, allowed: Array.from(allowed).join(''), at: Date.now()};
+}
+
+/* ---------- Background queue ---------- */
+var QUEUE_SIZE = 2;
+var filling = null, queueGen = 0, waiters = [];
+function getQueue(){ var q = store.get('queue', []); return Array.isArray(q) ? q : []; }
+function setQueue(q){ store.set('queue', q); updateReady(); }
+function usedIds(){
+  var ex = new Set();
+  getQueue().forEach(function(q){ Object.keys(q.targets).forEach(function(id){ ex.add(id); }); });
+  if (current) Object.keys(current.targets).forEach(function(id){ ex.add(id); });
+  return ex;
+}
+function updateReady(){
+  var n = getQueue().length;
+  $('#ready').textContent = n ? (n === 1 ? '1 story ready' : n + ' stories ready') : (filling ? 'Preparing your next story in the background' : '');
+  $('#write').textContent = (n && !$('#topic').value.trim() && !chosenIds.size) ? 'Next story' : 'Write story';
+}
+function fillQueue(){
+  if (filling || !settings.wkToken || !settings.geminiKey) return;
+  var gen = queueGen;
+  filling = (async function(){
+    try{
+      while (getQueue().length < QUEUE_SIZE && gen === queueGen){
+        updateReady();
+        var made = await makeStory('', function(){}, BG_WAITS, usedIds());
+        if (gen !== queueGen) break;
+        var q = getQueue(); q.push(made); setQueue(q);
+        waiters.splice(0).forEach(function(r){ r(true); });
+      }
+    }catch(e){ /* Gemini busy; try again later */ }
+    finally{
+      filling = null;
+      waiters.splice(0).forEach(function(r){ r(false); });
+      updateReady();
+    }
+  })();
+}
+function resetQueue(){ queueGen++; store.del('queue'); updateReady(); }
+function showStory(saved){
+  stopSpeaking();
+  addToLibrary(saved);
+  current = saved;
+  store.set('last', current);
+  render(current);
+  window.scrollTo(0, 0);
+}
+function takeFromQueue(){
+  var q = getQueue();
+  if (!q.length) return false;
+  var next = q.shift(); setQueue(q);
+  showStory(next);
+  return true;
+}
+
 /* ---------- Main flow ---------- */
+function setBusy(on){ busy = on; $('#write').disabled = on; $('#story').classList.toggle('dim', on); }
 async function newStory(){
   if (busy) return;
   if (!settings.wkToken || !settings.geminiKey){ openSettings(); return; }
-  busy = true; $('#write').disabled = true; $('#story').classList.add('dim'); showError('');
+  var topic = $('#topic').value.trim();
+  var picks = Array.from(chosenIds);
+  showError('');
+  if (!topic && !picks.length){
+    if (takeFromQueue()){ fillQueue(); return; }
+    if (filling){
+      setBusy(true); status('Your next story is almost ready');
+      var got = await new Promise(function(r){ waiters.push(r); });
+      status(''); setBusy(false);
+      if (got && takeFromQueue()){ fillQueue(); return; }
+    }
+  }
+  setBusy(true);
   try{
-    var data = await loadWK(false);
-    var pool = buildPool(data); showPool(pool);
-    var crit = sample(pool.critical.slice(0, Math.max(settings.nCritical*3, 15)), settings.nCritical);
-    var pickedIds = new Set(crit.map(function(x){ return x.id; }));
-    var rein = sample(pool.reinforce.filter(function(x){ return !pickedIds.has(x.id); }), settings.nReinforce);
-    crit.forEach(function(x){ x.bucket = 'crit'; });
-    rein.forEach(function(x){ x.bucket = 'rein'; });
-    var taken = new Set();
-    var list = [];
-    crit.concat(rein).forEach(function(x){
-      var item = x;
-      if (x.t === 'k'){
-        item = vocabFor(x, data, taken);
-        if (!item) return;
-        item.bucket = x.bucket;
-        item.via = {c: x.c, pct: x.pct, stage: x.stage};
-      }
-      if (taken.has(item.id)) return;
-      taken.add(item.id); list.push(item);
-    });
-    var allowed = new Set(pool.known);
-    list.forEach(function(x){ (x.c.match(HAN) || []).forEach(function(ch){ allowed.add(ch); }); });
-
-    status('Writing your story');
-    var story = sanitize(await gemini(buildPrompt(list, allowed, pool.level, $('#topic').value.trim()), 'Writing your story'), allowed);
-
-    status('Proofreading grammar and kanji');
-    var proofread = false;
-    try{
-      var bad = findBad(story, allowed);
-      var edited = sanitize(await gemini(buildEditPrompt(story, allowed, bad), 'Proofreading'), allowed);
-      if (findBad(edited, allowed).length <= bad.length){ story = edited; proofread = true; }
-    }catch(e){ /* keep the draft and say so */ }
-    story.proofread = proofread;
-
-    var targets = {};
-    list.forEach(function(x){ targets[x.id] = x; });
-    current = {story: story, targets: targets, allowed: Array.from(allowed).join(''), at: Date.now()};
-    store.set('last', current);
+    var made = await makeStory(topic, status, FG_WAITS, usedIds(), picks);
     status('');
-    render(current);
-    window.scrollTo(0, 0);
+    showStory(made);
+    $('#topic').value = '';
+    if (picks.length){ chosenIds.clear(); updatePicked(); }
   }catch(e){
     status('');
     showError(e.message || String(e));
   }finally{
-    busy = false; $('#write').disabled = false; $('#story').classList.remove('dim');
+    setBusy(false);
+    fillQueue();
   }
 }
 
@@ -530,7 +683,7 @@ function renderJP(str, ctx){
     } else if (m[0] === '</t>'){
       if (open){ html += '</span>'; open = false; }
     } else {
-      html += '<ruby>' + markKanji(esc(m[2]), ctx.allowed) + '<rt>' + esc(m[3]) + '</rt></ruby>';
+      html += '<ruby data-w="' + esc(m[2]) + '" data-r="' + esc(m[3]) + '">' + markKanji(esc(m[2]), ctx.allowed) + '<rt>' + esc(m[3]) + '</rt></ruby>';
     }
     last = re.lastIndex;
   }
@@ -544,14 +697,19 @@ function metaLine(x){
   return x.pct != null ? s + ', ' + x.pct + '% correct' : s;
 }
 function render(saved){
+  saved.story.sentences.forEach(function(x){ x.jp = unspace(x.jp); });
+  saved.story.title = unspace(saved.story.title);
   var ctx = {targets: saved.targets, allowed: new Set(saved.allowed), used: new Set()};
   var st = saved.story, h = '';
   h += '<h1 class="title" lang="ja">' + renderJP(st.title, ctx) + '</h1>';
   if (st.proofread === false) h += '<p class="draft">Gemini was too busy to proofread this story, so read it with some caution.</p>';
-  h += '<div class="legend"><span><span lang="ja" class="tg crit">練習</span>Needs work</span><span><span lang="ja" class="tg rein">復習</span>Keep fresh</span><span><span lang="ja" class="bad">漢</span>Not learned yet</span></div>';
+  if (canSpeak()) h += '<p class="listen"><button class="ghost" id="listenAll">Listen to the story</button></p>';
+  var hasPick = Object.keys(saved.targets).some(function(id){ return saved.targets[id].bucket === 'pick'; });
+  h += '<div class="legend">' + (hasPick ? '<span><span lang="ja" class="tg pick">選択</span>Your picks</span>' : '') + '<span><span lang="ja" class="tg crit">練習</span>Needs work</span><span><span lang="ja" class="tg rein">復習</span>Keep fresh</span><span><span lang="ja" class="bad">漢</span>Not learned yet</span></div>';
   st.sentences.forEach(function(s, i){
-    h += '<div class="sent"><p class="s" lang="ja">' + renderJP(s.jp, ctx) +
-      '<button class="yaku" lang="ja" aria-expanded="false" aria-controls="en' + i + '" aria-label="Show translation">訳</button></p>' +
+    var jp = String(s.jp || ''), m = jp.match(/[。、！？!?」』）)…\s]+$/), tail = m ? m[0] : '';
+    h += '<div class="sent" id="sent' + i + '"><p class="s" lang="ja">' + renderJP(tail ? jp.slice(0, -tail.length) : jp, ctx) +
+      '<span class="nb">' + esc(tail.trim()) + (canSpeak() ? '<button class="oto" lang="ja" data-i="' + i + '" aria-label="Read sentence aloud">音</button>' : '') + '<button class="yaku" lang="ja" aria-expanded="false" aria-controls="en' + i + '" aria-label="Show translation">訳</button></span></p>' +
       '<p class="en" id="en' + i + '" hidden>' + esc(s.en) + '</p></div>';
   });
   if (st.questions.length){
@@ -590,7 +748,7 @@ function openWord(id){
   var x = current && current.targets[id];
   if (!x) return;
   var src = x.via || x;
-  var why = (x.via ? 'Practises the kanji ' + x.via.c + '. ' : '') + (x.bucket === 'crit'
+  var why = (x.via ? 'Practises the kanji ' + x.via.c + '. ' : '') + (x.bucket === 'pick' ? 'You chose this to practise.' : x.bucket === 'crit'
     ? 'Included because your accuracy is below ' + settings.threshold + '%.'
     : 'Included to keep a ' + STAGES[src.stage] + ' item fresh.');
   var link = 'https://www.wanikani.com/' + (x.t === 'k' ? 'kanji/' : 'vocabulary/') + encodeURIComponent(x.c);
@@ -608,6 +766,218 @@ function openWord(id){
   $('#wordSheet').showModal();
 }
 
+/* ---------- Audio ---------- */
+function canSpeak(){ return 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined'; }
+var jaVoice = null, speakRun = 0;
+function pickVoice(){
+  if (!canSpeak()) return null;
+  var vs = speechSynthesis.getVoices().filter(function(v){ return /^ja/i.test(v.lang); });
+  jaVoice = vs.find(function(v){ return /google/i.test(v.name); }) || vs[0] || null;
+  return jaVoice;
+}
+if (canSpeak()){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function spoken(jp){ return String(jp || '').replace(/<\/?t[^>]*>/g, '').replace(/\{([^|{}]+)\|([^{}]+)\}/g, '$2'); }
+function clearSpeaking(){
+  document.querySelectorAll('.sent.speaking').forEach(function(el){ el.classList.remove('speaking'); });
+  document.querySelectorAll('.oto.on').forEach(function(el){ el.classList.remove('on'); });
+  var b = $('#listenAll'); if (b) b.textContent = 'Listen to the story';
+}
+function stopSpeaking(){ speakRun++; if (canSpeak()) speechSynthesis.cancel(); clearSpeaking(); }
+function speakIndexes(list){
+  if (!current) return;
+  stopSpeaking();
+  if (!jaVoice && !pickVoice()){ showError('Your phone has no Japanese voice installed. On Android, add Japanese in Settings, then Text-to-speech output, then Google Speech Services.'); }
+  var run = speakRun, sents = current.story.sentences, k = 0;
+  function next(){
+    if (run !== speakRun) return;
+    clearSpeaking();
+    if (k >= list.length) return;
+    var i = list[k++];
+    var el = document.getElementById('sent' + i); if (el) el.classList.add('speaking');
+    var btn = document.querySelector('.oto[data-i="' + i + '"]'); if (btn) btn.classList.add('on');
+    if (list.length > 1){ var b = $('#listenAll'); if (b) b.textContent = 'Stop'; }
+    var u = new SpeechSynthesisUtterance(spoken(sents[i].jp));
+    u.lang = 'ja-JP'; if (jaVoice) u.voice = jaVoice;
+    u.rate = parseFloat(settings.speech) || 0.85;
+    u.onend = next; u.onerror = function(){ if (run === speakRun) clearSpeaking(); };
+    speechSynthesis.speak(u);
+  }
+  next();
+}
+
+/* ---------- Look up any word ---------- */
+var dict = null;
+function getDict(){
+  if (dict) return dict;
+  var subj = store.get('subjects', null), wk = store.get('wk', null);
+  if (!subj) return null;
+  var byChars = {};
+  Object.keys(subj.items).forEach(function(id){ var c = subj.items[id].c; (byChars[c] = byChars[c] || []).push(id); });
+  dict = {items: subj.items, byChars: byChars, srs: wk ? wk.srs : {}, stats: wk ? wk.stats : {}};
+  return dict;
+}
+function entry(d, id){
+  var s = d.items[id]; if (!s) return null;
+  var st = d.stats[id];
+  return Object.assign({id: id, stage: d.srs[id], pct: st ? st.p : null}, s);
+}
+function findVocab(d, base, reading, after){
+  var best = null, bestScore = -1;
+  Object.keys(d.items).forEach(function(id){
+    var s = d.items[id];
+    if (s.t !== 'v' || s.c.indexOf(base) !== 0) return;
+    if (!s.r.some(function(r){ return r.indexOf(reading) === 0; })) return;
+    var rest = s.c.slice(base.length);
+    var score = 10 - Math.min(rest.length, 9);
+    if (rest === '') score += 20;
+    if (/^[\u3041-\u3096ー]*$/.test(rest)) score += 10;
+    if (rest && after && rest[0] === after[0]) score += 15;
+    if (rest && after && after.indexOf(rest) === 0) score += 25;
+    if (score > bestScore){ bestScore = score; best = id; }
+  });
+  return best ? entry(d, best) : null;
+}
+function lookupWord(base, reading, after){
+  var d = getDict();
+  var v = d ? findVocab(d, base, reading, after) : null;
+  var kanji = (base.match(HAN) || []).map(function(ch){
+    var ids = d && d.byChars[ch] ? d.byChars[ch].filter(function(id){ return d.items[id].t === 'k'; }) : [];
+    return ids.length ? entry(d, ids[0]) : {c: ch, m: [], stage: undefined};
+  });
+  var head = v ? v.c : base, read = v ? v.r.join('\u3001') : reading;
+  var h = '<div class="ws-char" lang="ja">' + esc(head) + '</div>' +
+    '<div class="ws-read" lang="ja">' + esc(read) + '</div>' +
+    '<div class="ws-mean">' + (v ? esc(v.m.join(', ')) : '<span class="why">Not a WaniKani vocabulary word you\u2019ve reached yet.</span>') + '</div>';
+  if (v) h += '<dl><dt>Stage</dt><dd>' + esc(v.stage != null ? STAGES[v.stage] : 'Not started') + '</dd>' + (v.pct != null ? '<dt>Accuracy</dt><dd>' + v.pct + '%</dd>' : '') + '</dl>';
+  if (kanji.length){
+    h += '<ul class="kl">' + kanji.map(function(k){
+      return '<li><b lang="ja">' + esc(k.c) + '</b>' + esc(k.m && k.m.length ? k.m.slice(0,2).join(', ') : 'Not in your WaniKani levels yet') +
+        '<span>' + esc(k.stage != null ? STAGES[k.stage] : (k.m && k.m.length ? 'Not started' : '')) + '</span></li>';
+    }).join('') + '</ul>';
+  }
+  var link = v ? 'https://www.wanikani.com/vocabulary/' + encodeURIComponent(v.c) : 'https://jisho.org/search/' + encodeURIComponent(base);
+  h += '<div class="actions"><button class="ghost" id="sayWord">Hear it</button><a class="ghost" href="' + link + '" target="_blank" rel="noopener">' + (v ? 'Open on WaniKani' : 'Look up on Jisho') + '</a><button class="primary" id="closeWord">Close</button></div>';
+  $('#wordBody').innerHTML = h;
+  $('#closeWord').onclick = function(){ $('#wordSheet').close(); };
+  $('#sayWord').onclick = function(){
+    if (!canSpeak()) return;
+    stopSpeaking();
+    var u = new SpeechSynthesisUtterance(v ? v.r[0] : reading); u.lang = 'ja-JP'; if (jaVoice) u.voice = jaVoice; u.rate = parseFloat(settings.speech) || 0.85;
+    speechSynthesis.speak(u);
+  };
+  if (!canSpeak()) $('#sayWord').remove();
+  $('#wordSheet').showModal();
+}
+function afterKana(r){
+  var t = '', n = r.nextSibling;
+  while (n && n.nodeType === 3){ t += n.textContent; n = n.nextSibling; }
+  var m = t.match(/^[\u3041-\u3096ー]+/);
+  return m ? m[0] : '';
+}
+
+/* ---------- Choose words ---------- */
+var chosenIds = new Set(), pickData = null, pickFilter = 'crit', MAX_PICKS = 6;
+function updatePicked(){
+  var n = chosenIds.size, el = $('#picked');
+  el.hidden = !n;
+  el.textContent = n ? n + (n === 1 ? ' word' : ' words') + ' chosen for your next story' : '';
+  $('#pickCount').textContent = n ? n + ' of ' + MAX_PICKS + ' chosen' : 'None chosen';
+  $('#pickGo').disabled = !n;
+  updateReady();
+}
+async function openPick(){
+  if (!settings.wkToken){ openSettings(); return; }
+  showError('');
+  try{
+    var data = await loadWK(false);
+    status('');
+    var pool = buildPool(data);
+    var critSet = new Set(pool.critical.map(function(x){ return x.id; }));
+    var items = [];
+    Object.keys(data.wk.srs).forEach(function(id){
+      var stage = data.wk.srs[id], s = data.subjects[id];
+      if (!s || stage < 1 || stage > 6) return;
+      var st = data.wk.stats[id];
+      items.push(Object.assign({id: String(id), stage: stage, pct: st ? st.p : null, crit: critSet.has(String(id))}, s));
+    });
+    pool.critical.forEach(function(x){ if (x.stage > 6) items.push(Object.assign({crit: true}, x)); });
+    items.sort(function(a, b){ return (a.pct == null ? 101 : a.pct) - (b.pct == null ? 101 : b.pct) || a.stage - b.stage; });
+    pickData = items;
+  }catch(e){ status(''); showError(e.message); return; }
+  renderPick();
+  $('#pick').showModal();
+}
+function renderPick(){
+  if (!pickData) return;
+  var q = $('#pickSearch').value.trim().toLowerCase();
+  var rows = pickData.filter(function(x){
+    if (q) return x.c.indexOf(q) >= 0 || x.r.some(function(r){ return r.indexOf(q) >= 0; }) || x.m.some(function(m){ return m.toLowerCase().indexOf(q) >= 0; });
+    if (pickFilter === 'crit') return x.crit;
+    if (pickFilter === 'app') return x.stage >= 1 && x.stage <= 4;
+    if (pickFilter === 'guru') return x.stage === 5 || x.stage === 6;
+    return chosenIds.has(x.id);
+  }).slice(0, 200);
+  var full = chosenIds.size >= MAX_PICKS;
+  $('#pickList').innerHTML = rows.length ? rows.map(function(x){
+    var on = chosenIds.has(x.id), off = full && !on;
+    return '<li><label class="pk' + (off ? ' off' : '') + '"><input type="checkbox" value="' + x.id + '"' + (on ? ' checked' : '') + (off ? ' disabled' : '') + '>' +
+      '<span class="c" lang="ja">' + esc(x.c) + '</span><span>' + esc(x.m[0] || '') + ' <span lang="ja">' + esc(x.r[0] || '') + '</span>' +
+      '<span class="x">' + (x.t === 'k' ? 'Kanji' : 'Vocabulary') + ', ' + esc(STAGES[x.stage] || '') + (x.pct != null ? ', ' + x.pct + '% correct' : '') + '</span></span></label></li>';
+  }).join('') : '<li class="why" style="padding:1rem 0">' + (q ? 'No in-progress items match that.' : pickFilter === 'sel' ? 'Nothing chosen yet.' : 'Nothing here right now.') + '</li>';
+  updatePicked();
+}
+$('#openPick').onclick = openPick;
+$('#pickSearch').addEventListener('input', renderPick);
+$('#pickChips').addEventListener('click', function(e){
+  var b = e.target.closest('[data-f]'); if (!b) return;
+  pickFilter = b.getAttribute('data-f');
+  $('#pickSearch').value = '';
+  document.querySelectorAll('#pickChips button').forEach(function(x){ x.setAttribute('aria-pressed', String(x === b)); });
+  renderPick();
+});
+$('#pickList').addEventListener('change', function(e){
+  var c = e.target; if (!c.matches('input[type=checkbox]')) return;
+  if (c.checked) chosenIds.add(c.value); else chosenIds.delete(c.value);
+  renderPick();
+});
+$('#pickClear').onclick = function(){ chosenIds.clear(); renderPick(); };
+$('#pickGo').onclick = function(){ $('#pick').close(); newStory(); };
+
+/* ---------- Library ---------- */
+function addToLibrary(saved){
+  if (!saved || !saved.story) return;
+  var lib = store.get('library', []);
+  if (!Array.isArray(lib)) lib = [];
+  if (lib.some(function(x){ return x.at === saved.at; })) return;
+  lib.unshift(saved);
+  lib = lib.slice(0, 30);
+  while (!store.set('library', lib) && lib.length > 1) lib = lib.slice(0, Math.floor(lib.length / 2));
+}
+function openLibrary(){
+  var lib = store.get('library', []);
+  if (!Array.isArray(lib) || !lib.length){
+    $('#libList').innerHTML = '<li class="why">Stories you read will be kept here, up to the last 30.</li>';
+  } else {
+    $('#libList').innerHTML = lib.map(function(x, i){
+      var d = new Date(x.at);
+      var when = d.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short'}) + ', ' + d.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'});
+      var cur = current && current.at === x.at;
+      return '<li' + (cur ? ' class="cur"' : '') + '><button data-lib="' + i + '"><span class="lt" lang="ja">' + esc(plain(x.story.title) || 'Untitled') + '</span><span class="ld">' + esc(when) + (cur ? ', reading now' : '') + '</span></button></li>';
+    }).join('');
+  }
+  $('#library').showModal();
+}
+$('#libList').addEventListener('click', function(e){
+  var b = e.target.closest('[data-lib]'); if (!b) return;
+  var lib = store.get('library', []);
+  var x = lib[+b.getAttribute('data-lib')]; if (!x) return;
+  stopSpeaking();
+  current = x; store.set('last', current); render(current); window.scrollTo(0, 0);
+  $('#library').close();
+});
+$('#openLibrary').onclick = openLibrary;
+$('#closeLib').onclick = function(){ $('#library').close(); };
+
 /* ---------- Settings ---------- */
 function openSettings(){
   var f = $('#settingsForm');
@@ -623,13 +993,15 @@ $('#settingsForm').addEventListener('submit', function(){
     v: 3,
     storyLength: f.storyLength.value, grammar: f.grammar.value, furigana: f.furigana.value,
     nCritical: clampInt(f.nCritical.value, 0, 10, 2), nReinforce: clampInt(f.nReinforce.value, 0, 10, 1),
-    threshold: clampInt(f.threshold.value, 10, 100, 75)
+    threshold: clampInt(f.threshold.value, 10, 100, 75),
+    speech: f.speech.value
   };
   store.set('settings', settings);
-  if (oldToken !== settings.wkToken){ store.del('wk'); $('#lvl').textContent = ''; $('#pool').textContent = ''; }
+  if (oldToken !== settings.wkToken){ store.del('wk'); dict = null; $('#pool').textContent = ''; }
   applyFurigana();
   if (!current) renderEmpty();
-  quietPool();
+  resetQueue();
+  quietPool().then(fillQueue);
 });
 $('#refreshWK').onclick = async function(){
   $('#settings').close();
@@ -647,6 +1019,8 @@ $('#clearAll').onclick = function(){
 $('#openSettings').onclick = openSettings;
 $('#write').onclick = newStory;
 $('#topic').addEventListener('keydown', function(e){ if (e.key === 'Enter') newStory(); });
+$('#topic').addEventListener('input', updateReady);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) fillQueue(); });
 $('#story').addEventListener('click', function(e){
   var y = e.target.closest('.yaku');
   if (y){
@@ -654,15 +1028,26 @@ $('#story').addEventListener('click', function(e){
     var open = y.getAttribute('aria-expanded') === 'true';
     y.setAttribute('aria-expanded', String(!open)); en.hidden = open; return;
   }
-  var r = e.target.closest('ruby');
-  if (r && settings.furigana === 'tap') r.classList.toggle('on');
+  var o = e.target.closest('.oto');
+  if (o){
+    if (o.classList.contains('on')) stopSpeaking(); else speakIndexes([+o.getAttribute('data-i')]);
+    return;
+  }
+  if (e.target.closest('#listenAll')){
+    if (document.querySelector('.sent.speaking')) stopSpeaking();
+    else speakIndexes(current.story.sentences.map(function(_, i){ return i; }));
+    return;
+  }
   var t = e.target.closest('.tg[data-id], .word[data-id]');
-  if (t) openWord(t.getAttribute('data-id'));
+  var r = e.target.closest('ruby');
+  if (r && settings.furigana === 'tap' && !r.classList.contains('on')){ r.classList.add('on'); return; }
+  if (t){ openWord(t.getAttribute('data-id')); return; }
+  if (r && r.getAttribute('data-w')) lookupWord(r.getAttribute('data-w'), r.getAttribute('data-r') || '', afterKana(r));
 });
 $('#story').addEventListener('keydown', function(e){
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.tg[data-id]')){ e.preventDefault(); openWord(e.target.getAttribute('data-id')); }
 });
-['settings','wordSheet'].forEach(function(id){
+['settings','wordSheet','library','pick'].forEach(function(id){
   var d = document.getElementById(id);
   d.addEventListener('click', function(e){ if (e.target === d) d.close(); });
 });
@@ -676,8 +1061,9 @@ async function quietPool(){
 /* ---------- Start ---------- */
 applyFurigana();
 current = store.get('last', null);
-if (current && current.story) render(current); else { current = null; renderEmpty(); }
-quietPool();
+if (current && current.story){ addToLibrary(current); render(current); } else { current = null; renderEmpty(); }
+updateReady();
+quietPool().then(fillQueue);
 })();
 </script>
 </body>
